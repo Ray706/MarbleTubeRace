@@ -405,9 +405,9 @@ window.addEventListener('load', () => {
         alpha: true,
         depth: true,
         stencil: true,
-        antialias: true,
-        powerPreference: 'default',
-        failIfMajorPerformanceCaveat: false,
+        antialias: false,
+        powerPreference: 'high-performance',
+        failIfMajorPerformanceCaveat: true,
         preserveDrawingBuffer: false
       };
       const gl = canvas.getContext('webgl2', contextAttributes);
@@ -765,6 +765,15 @@ function checkCollisions() {
         createCoin();
       }
     }
+    // Ensure player stays within tube bounds
+    const path = new THREE.CatmullRomCurve3(pathPoints);
+    const currentPoint = path.getPointAt(percent % 1);
+    const tangent = path.getTangentAt(percent % 1);
+    const projection = playerPos.clone().projectOnPlane(tangent);
+    if (projection.length() > TUBE_RADIUS - MARBLE_RADIUS) {
+      projection.setLength(TUBE_RADIUS - MARBLE_RADIUS);
+      playerPos.copy(projection);
+    }
   } catch (err) {
     handleError(err, 'Collision Detection');
   }
@@ -907,39 +916,28 @@ function updatePlayerAndCamera() {
   const cameraForward = new THREE.Vector3();
   camera.getWorldDirection(cameraForward);
   const cameraRight = new THREE.Vector3().crossVectors(cameraForward, new THREE.Vector3(0, 1, 0)).normalize();
+  const cameraUp = new THREE.Vector3().crossVectors(cameraRight, cameraForward).normalize();
   let movementVector = new THREE.Vector3();
+
   if (keys.ArrowLeft || keys.a) {
-    const leftDirection = cameraRight.clone().multiplyScalar(-1);
-    movementVector.add(leftDirection);
+    movementVector.add(cameraRight.clone().multiplyScalar(-1));
   }
   if (keys.ArrowRight || keys.d) {
-    const rightDirection = cameraRight.clone();
-    movementVector.add(rightDirection);
+    movementVector.add(cameraRight);
   }
   if (keys.ArrowUp || keys.w) {
-    const path = new THREE.CatmullRomCurve3(pathPoints);
-    const tangent = path.getTangentAt(percent % 1);
-    const forward = tangent.clone();
-    forward.y = 0;
-    forward.normalize();
-    movementVector.add(forward);
-    if (!isTurboActive) {
-      baseSpeed = Math.min(baseSpeed + 0.00002, MAX_NORMAL_SPEED);
-      speed = baseSpeed;
-    }
+    movementVector.add(cameraForward);
   }
   if (keys.ArrowDown || keys.s) {
-    const path = new THREE.CatmullRomCurve3(pathPoints);
-    const tangent = path.getTangentAt(percent % 1);
-    const backward = tangent.clone();
-    backward.y = 0;
-    backward.normalize();
-    movementVector.sub(backward);
-    if (!isTurboActive) {
-      baseSpeed = Math.max(baseSpeed - 0.00002, DEFAULT_SPEED);
-      speed = baseSpeed;
-    }
+    movementVector.add(cameraForward.clone().multiplyScalar(-1));
   }
+  if (keys.ArrowUp || keys.w) {
+    movementVector.add(cameraUp);
+  }
+  if (keys.ArrowDown || keys.s) {
+    movementVector.add(cameraUp.clone().multiplyScalar(-1));
+  }
+
   if (movementVector.length() > 0) {
     movementVector.normalize();
     playerPosition.add(movementVector.multiplyScalar(MOVEMENT_SPEED));
