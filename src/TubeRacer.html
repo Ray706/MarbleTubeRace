@@ -1,7 +1,7 @@
 <html><head><base href="https://player-control.websim.io/"><title>3D Tube Racer with Touch and Trackball Controls</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap" rel="stylesheet">
-<script src="../JS/three.min.js" crossorigin="anonymous"></script>
-<script src="../JS/Stats.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r17/Stats.js"></script>
 <style>
   body { margin: 0; overflow: hidden; font-family: 'Press Start 2P', cursive; }
   canvas { width: 100%; height: 100%; }
@@ -599,12 +599,8 @@ function initTube() {
   try {
     const path = new THREE.CatmullRomCurve3(pathPoints);
     const tubeGeometry = new THREE.TubeGeometry(path, 300, 6, 12, true);
-    const tubeMaterial = new THREE.MeshPhongMaterial({
-      color: 0x000000,
-      side: THREE.DoubleSide,
-      wireframe: false,
-      depthTest: true,
-      depthWrite: true
+    const tubeMaterial = new THREE.MeshBasicMaterial({
+      color: 0x000000
     });
     const tubeWireframe = new THREE.LineSegments(new THREE.EdgesGeometry(tubeGeometry), new THREE.LineBasicMaterial({
       color: 0x4169E1,
@@ -648,14 +644,9 @@ function initPlayer() {
 function createObstacle() {
   try {
     const geometry = Math.random() > 0.5 ? new THREE.ConeBufferGeometry(0.5, 1, 8) : new THREE.BoxBufferGeometry(0.3, 2, 0.3);
-    const obstacle = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({
+    const obstacle = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
       color: 0xff0000,
-      emissive: 0xff0000,
-      emissiveIntensity: 0.3,
-      depthTest: true,
-      depthWrite: true,
-      transparent: false,
-      flatShading: true
+      transparent: false
     }));
     const positionPercent = Math.random();
     const path = new THREE.CatmullRomCurve3(pathPoints);
@@ -676,12 +667,8 @@ function createObstacle() {
 function createCoin() {
   try {
     const geometry = new THREE.CylinderGeometry(0.3, 0.3, 0.1, 16);
-    const coin = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({
+    const coin = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
       color: 0xFFD700,
-      emissive: 0xFFD700,
-      emissiveIntensity: 0.3,
-      depthTest: true,
-      depthWrite: true,
       transparent: false
     }));
     const positionPercent = Math.random();
@@ -765,15 +752,7 @@ function checkCollisions() {
         createCoin();
       }
     }
-    // Ensure player stays within tube bounds
-    const path = new THREE.CatmullRomCurve3(pathPoints);
-    const currentPoint = path.getPointAt(percent % 1);
-    const tangent = path.getTangentAt(percent % 1);
-    const projection = playerPos.clone().projectOnPlane(tangent);
-    if (projection.length() > TUBE_RADIUS - MARBLE_RADIUS) {
-      projection.setLength(TUBE_RADIUS - MARBLE_RADIUS);
-      playerPos.copy(projection);
-    }
+    
   } catch (err) {
     handleError(err, 'Collision Detection');
   }
@@ -907,12 +886,14 @@ let startX = 0;
 let startY = 0;
 function updatePlayerAndCamera() {
   if (!isGameStarted && !isDemoMode) return;
+
   const player = scene.children.find(child => child instanceof THREE.Mesh && child.geometry instanceof THREE.SphereGeometry);
   if (!player || !scene || !camera) {
     console.warn('Required objects not found for player/camera update');
     recoverFromError(new Error('Missing core game objects'));
     return;
   }
+
   const cameraForward = new THREE.Vector3();
   camera.getWorldDirection(cameraForward);
   const cameraRight = new THREE.Vector3().crossVectors(cameraForward, new THREE.Vector3(0, 1, 0)).normalize();
@@ -951,15 +932,20 @@ function updatePlayerAndCamera() {
       playerPosition.copy(projection);
     }
   }
+
   const path = new THREE.CatmullRomCurve3(pathPoints);
   const currentPoint = path.getPointAt(percent % 1);
   const tangent = path.getTangentAt(percent % 1);
   const targetPosition = new THREE.Vector3().copy(currentPoint).add(playerPosition);
   player.position.lerp(targetPosition, 0.1);
-  const cameraTarget = new THREE.Vector3().copy(player.position).add(tangent.multiplyScalar(-3)).add(new THREE.Vector3(0, 1, 0));
+
+  // Corrected camera target calculation
+  const cameraTarget = new THREE.Vector3().copy(player.position).add(tangent.multiplyScalar(-5)).add(new THREE.Vector3(0, 2, 0)); // Adjusted offset
   camera.position.lerp(cameraTarget, 0.1);
+
   const nextPoint = path.getPointAt((percent + 0.01) % 1);
   camera.lookAt(nextPoint);
+
   if (cameraShakeIntensity > 0.01) {
     cameraOriginalPosition.copy(camera.position);
     camera.position.x += (Math.random() - 0.5) * cameraShakeIntensity;
@@ -969,8 +955,8 @@ function updatePlayerAndCamera() {
   } else {
     cameraShakeIntensity = 0;
   }
+
   if (isTurboActive && speedLines.length > 0) {
-    const path = new THREE.CatmullRomCurve3(pathPoints);
     const currentPoint = path.getPointAt(percent % 1);
     const nextPoint = path.getPointAt((percent + 0.01) % 1);
     const tangent = new THREE.Vector3().subVectors(nextPoint, currentPoint).normalize();
@@ -1169,12 +1155,9 @@ let powerups = [];
 function createPowerup() {
   try {
     const geometry = new THREE.TetrahedronGeometry(0.5);
-    const material = new THREE.MeshPhongMaterial({
+    const material = new THREE.MeshBasicMaterial({
       color: 0xFFD700,
-      emissive: 0xFFD700,
-      emissiveIntensity: 0.5,
-      transparent: true,
-      opacity: 0.8
+      transparent: false
     });
     const powerup = new THREE.Mesh(geometry, material);
     const positionPercent = Math.random();
