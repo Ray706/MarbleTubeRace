@@ -599,8 +599,12 @@ function initTube() {
   try {
     const path = new THREE.CatmullRomCurve3(pathPoints);
     const tubeGeometry = new THREE.TubeGeometry(path, 300, 6, 12, true);
-    const tubeMaterial = new THREE.MeshBasicMaterial({
-      color: 0x000000
+    const tubeMaterial = new THREE.MeshPhongMaterial({
+      color: 0x000000,
+      side: THREE.DoubleSide,
+      wireframe: false,
+      depthTest: true,
+      depthWrite: true
     });
     const tubeWireframe = new THREE.LineSegments(new THREE.EdgesGeometry(tubeGeometry), new THREE.LineBasicMaterial({
       color: 0x4169E1,
@@ -667,8 +671,12 @@ function createObstacle() {
 function createCoin() {
   try {
     const geometry = new THREE.CylinderGeometry(0.3, 0.3, 0.1, 16);
-    const coin = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
+    const coin = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({
       color: 0xFFD700,
+      emissive: 0xFFD700,
+      emissiveIntensity: 0.3,
+      depthTest: true,
+      depthWrite: true,
       transparent: false
     }));
     const positionPercent = Math.random();
@@ -1096,6 +1104,7 @@ let currentLap = 0;
 let isDemoMode = true;
 function startGame() {
   isDemoMode = false;
+  restartGame();
   document.getElementById('startScreen').style.display = 'none';
   const countdown = document.getElementById('countdownOverlay');
   countdown.style.display = 'block';
@@ -1111,7 +1120,6 @@ function startGame() {
   setTimeout(() => {
     countdown.style.display = 'none';
     isGameStarted = true;
-    restartGame();
   }, 6000);
 }
 function checkLap() {
@@ -1155,9 +1163,12 @@ let powerups = [];
 function createPowerup() {
   try {
     const geometry = new THREE.TetrahedronGeometry(0.5);
-    const material = new THREE.MeshBasicMaterial({
+    const material = new THREE.MeshPhongMaterial({
       color: 0xFFD700,
-      transparent: false
+      emissive: 0xFFD700,
+      emissiveIntensity: 0.5,
+      transparent: true,
+      opacity: 0.8
     });
     const powerup = new THREE.Mesh(geometry, material);
     const positionPercent = Math.random();
